@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o ./.helm/templates
+    kompose.controller.type: statefulset
+    kompose.version: 1.28.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: keycloakdb
+  name: keycloakdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: keycloakdb
+  serviceName: keycloakdb
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.network/keycloak-network: "true"
+        io.kompose.service: keycloakdb
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/secrets/keycloak-db-pass/keycloak-db-pass
+            - name: POSTGRES_USER_FILE
+              value: /run/secrets/keycloak-db-user/keycloak-db-user
+          image: postgres:12.9
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -h 127.0.0.1
+            failureThreshold: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+          name: keycloakdb
+          ports:
+            - containerPort: 5432
+          resources: {}
+          volumeMounts:
+            - mountPath: /run/secrets/keycloak-db-user
+              name: keycloak-db-user
+            - mountPath: /run/secrets/keycloak-db-pass
+              name: keycloak-db-pass
+            - mountPath: /var/lib/postgresql/data
+              name: keycloakdb
+      restartPolicy: Always
+      volumes:
+        - name: keycloak-db-user
+          secret:
+            items:
+              - key: keycloak-db-user
+                path: keycloak-db-user
+            secretName: keycloak-db-user
+        - name: keycloak-db-pass
+          secret:
+            items:
+              - key: keycloak-db-pass
+                path: keycloak-db-pass
+            secretName: keycloak-db-pass
+        - name: keycloakdb
+          persistentVolumeClaim:
+            claimName: keycloakdb
+  updateStrategy: {}
+  volumeClaimTemplates:
+    - metadata:
+        creationTimestamp: null
+        labels:
+          io.kompose.service: keycloakdb
+        name: keycloakdb
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Mi
+      status: {}
+status:
+  replicas: 0

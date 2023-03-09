@@ -1,0 +1,85 @@
+version: "3.8"
+
+services:
+  keycloakdb:
+    container_name: keycloakdb
+    image: postgres:12.9
+    labels:
+      kompose.controller.type: "statefulset"
+    volumes:
+      - keycloakdb:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/keycloak-db-user/keycloak-db-user
+      POSTGRES_PASSWORD_FILE: /run/secrets/keycloak-db-pass/keycloak-db-pass
+    secrets:
+      - keycloak-db-user
+      - keycloak-db-pass
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/sh", "-c", "exec pg_isready -h 127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - keycloak-network
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:19.0.3
+    labels:
+      kompose.service.expose: "{{ .Values.host }}"
+      kompose.service.expose.ingress-class-name: "nginx"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health/ready" ]
+      interval: 20s
+      retries: 5
+      start_period: 20s
+      timeout: 10s
+    env_file:
+      - .raw/config/keycloak.env
+    environment:
+      KC_DB: ${KC_DB}
+      KC_DB_URL: ${KC_DB_URL}
+      KC_FEATURES: ${KC_FEATURES}
+      KC_HOSTNAME_STRICT: ${KC_HOSTNAME_STRICT}
+      KC_HOSTNAME_STRICT_HTTPS: ${KC_HOSTNAME_STRICT_HTTPS}
+      KC_HOSTNAME_STRICT_BACKCHANNEL: ${KC_HOSTNAME_STRICT_BACKCHANNEL}
+      KC_HTTP_ENABLED: ${KC_HTTP_ENABLED}
+      PROXY_ADDRESS_FORWARDING: ${PROXY_ADDRESS_FORWARDING}
+      KC_CACHE_STACK: ${KC_CACHE_STACK}
+      KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    secrets:
+      - source: keycloak-conf
+        target: /opt/keycloak/conf/keycloak.conf
+    ports:
+      - "80:8080"
+    command:
+      - "start"
+      - "--http-port 8080"
+      - "--proxy=passthrough"
+      - "--import-realm"
+    depends_on:
+      - keycloakdb
+    networks:
+      - keycloak-network
+
+
+
+networks:
+  keycloak-network:
+    name: keycloak-network
+
+secrets:
+  keycloak-conf:
+    file: .raw/secret/keycloak.conf
+  keycloak-db-user:
+    file: .raw/secret/user.txt
+  keycloak-db-pass:
+    file: .raw/secret/pass.txt
+
+volumes:
+  keycloakdb:
+    driver: local

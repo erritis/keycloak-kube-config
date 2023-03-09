@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose.yml -o ./.helm/templates
+    kompose.service.expose: {{ .Values.host }}
+    kompose.service.expose.ingress-class-name: nginx
+    kompose.version: 1.28.0 (HEAD)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: keycloak
+  name: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: keycloak
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose.yml -o ./.helm/templates
+        kompose.service.expose: {{ .Values.host }}
+        kompose.service.expose.ingress-class-name: nginx
+        kompose.version: 1.28.0 (HEAD)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/keycloak-network: "true"
+        io.kompose.service: keycloak
+    spec:
+      containers:
+        - args:
+            - start
+            - --http-port 8080
+            - --proxy=passthrough
+            - --import-realm
+          env:
+            - name: KC_CACHE_STACK
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_CACHE_STACK
+                  name: raw-config-keycloak-env
+            - name: KC_DB
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_DB
+                  name: raw-config-keycloak-env
+            - name: KC_DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_DB_URL
+                  name: raw-config-keycloak-env
+            - name: KC_FEATURES
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_FEATURES
+                  name: raw-config-keycloak-env
+            - name: KC_HEALTH_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_HEALTH_ENABLED
+                  name: raw-config-keycloak-env
+            - name: KC_HOSTNAME_STRICT
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_HOSTNAME_STRICT
+                  name: raw-config-keycloak-env
+            - name: KC_HOSTNAME_STRICT_BACKCHANNEL
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_HOSTNAME_STRICT_BACKCHANNEL
+                  name: raw-config-keycloak-env
+            - name: KC_HOSTNAME_STRICT_HTTPS
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_HOSTNAME_STRICT_HTTPS
+                  name: raw-config-keycloak-env
+            - name: KC_HTTP_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  key: KC_HTTP_ENABLED
+                  name: raw-config-keycloak-env
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                configMapKeyRef:
+                  key: KEYCLOAK_ADMIN
+                  name: raw-config-keycloak-env
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  key: KEYCLOAK_ADMIN_PASSWORD
+                  name: raw-config-keycloak-env
+            - name: PROXY_ADDRESS_FORWARDING
+              valueFrom:
+                configMapKeyRef:
+                  key: PROXY_ADDRESS_FORWARDING
+                  name: raw-config-keycloak-env
+          image: quay.io/keycloak/keycloak:19.0.3
+          livenessProbe:
+            exec:
+              command:
+                - curl
+                - -f
+                - http://localhost:8080/health/ready
+            failureThreshold: 5
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 10
+          name: keycloak
+          ports:
+            - containerPort: 8080
+          resources: {}
+          volumeMounts:
+            - mountPath: /opt/keycloak/conf
+              name: keycloak-conf
+      restartPolicy: Always
+      volumes:
+        - name: keycloak-conf
+          secret:
+            items:
+              - key: keycloak-conf
+                path: keycloak.conf
+            secretName: keycloak-conf
+status: {}
