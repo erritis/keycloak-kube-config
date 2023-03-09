@@ -27,8 +27,8 @@ werf-up-conf:
   kubectl apply -Rf ./.kube/config/;
   kubectl apply -Rf ./.kube/secret/;
 werf-down-conf:
-  kubectl apply -Rf ./.kube/config/;
-  kubectl apply -Rf ./.kube/secret/;
+  kubectl delete -Rf ./.kube/config/;
+  kubectl delete -Rf ./.kube/secret/;
 
 werf-up:
   werf converge;
