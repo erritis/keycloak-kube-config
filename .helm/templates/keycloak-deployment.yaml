@@ -2,9 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
     kompose.cmd: kompose convert -f docker-compose.yml -o ./.helm/templates
     kompose.service.expose: {{ .Values.host }}
     kompose.service.expose.ingress-class-name: nginx
+    kompose.service.expose.tls-secret: keycloak-secret
     kompose.version: 1.28.0 (HEAD)
   creationTimestamp: null
   labels:
@@ -19,9 +21,11 @@ spec:
   template:
     metadata:
       annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
         kompose.cmd: kompose convert -f docker-compose.yml -o ./.helm/templates
         kompose.service.expose: {{ .Values.host }}
         kompose.service.expose.ingress-class-name: nginx
+        kompose.service.expose.tls-secret: keycloak-secret
         kompose.version: 1.28.0 (HEAD)
       creationTimestamp: null
       labels:

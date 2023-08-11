@@ -30,6 +30,8 @@ services:
     labels:
       kompose.service.expose: "{{ .Values.host }}"
       kompose.service.expose.ingress-class-name: "nginx"
+      kompose.service.expose.tls-secret: "keycloak-secret"
+      cert-manager.io/cluster-issuer: letsencrypt-prod
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health/ready" ]
       interval: 20s

@@ -27,7 +27,7 @@ werf-up-conf:
   kubectl apply -Rf './.helm/templates/*-configmap.yaml';
   kubectl apply -Rf './.helm/templates/*-secret.yaml';
 werf-down-conf:
-  kubectl delete -Rf '/.helm/templates/*-configmap.yaml';
+  kubectl delete -Rf './.helm/templates/*-configmap.yaml';
   kubectl delete -Rf './.helm/templates/*-secret.yaml';
 
 werf-up *FLAGS:
